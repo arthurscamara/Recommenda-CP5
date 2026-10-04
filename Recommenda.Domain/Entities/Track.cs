@@ -1,4 +1,5 @@
 using Recommenda.Domain.Common;
+using Recommenda.Domain.Exceptions;
 
 namespace Recommenda.Domain.Entities;
 
@@ -30,11 +31,11 @@ public class Track : BaseEntity
     public Track(string title, int durationSeconds, int trackNumber, Guid albumId)
     {
         if (string.IsNullOrWhiteSpace(title))
-            throw new Exception("Título da faixa não pode ser vazio.");
+            throw new DomainException("Título da faixa não pode ser vazio.");
         if (durationSeconds <= 0)
-            throw new Exception("Duração deve ser maior que zero.");
+            throw new DomainException("Duração deve ser maior que zero.");
         if (trackNumber < 1)
-            throw new Exception("Número da faixa deve ser maior que zero.");
+            throw new DomainException("Número da faixa deve ser maior que zero.");
 
         Title = title;
         DurationSeconds = durationSeconds;

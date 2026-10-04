@@ -1,4 +1,5 @@
 using Recommenda.Domain.Common;
+using Recommenda.Domain.Exceptions;
 
 namespace Recommenda.Domain.Entities;
 
@@ -22,7 +23,7 @@ public class Genre : BaseEntity
     public Genre(string name, string description)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new Exception("Nome do gênero não pode ser vazio.");
+            throw new DomainException("Nome do gênero não pode ser vazio.");
         Name = name;
         Description = description;
     }

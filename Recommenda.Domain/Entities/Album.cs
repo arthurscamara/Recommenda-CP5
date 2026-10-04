@@ -1,4 +1,5 @@
 using Recommenda.Domain.Common;
+using Recommenda.Domain.Exceptions;
 
 namespace Recommenda.Domain.Entities;
 
@@ -29,9 +30,9 @@ public class Album : BaseEntity
     public Album(string title, DateTime releaseDate, Guid artistId, string coverUrl = "")
     {
         if (string.IsNullOrWhiteSpace(title))
-            throw new Exception("Título do álbum não pode ser vazio.");
+            throw new DomainException("Título do álbum não pode ser vazio.");
         if (releaseDate.Year < 1877)
-            throw new Exception("Data de lançamento inválida.");
+            throw new DomainException("Data de lançamento inválida.");
 
         Title = title;
         ReleaseDate = releaseDate;

@@ -1,4 +1,7 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Recommenda.API.Extensions;
 using Recommenda.Application.DTOs;
 using Recommenda.Application.Services;
 using Recommenda.Domain.Exceptions;
@@ -8,13 +11,13 @@ namespace Recommenda.API.Controllers;
 /// <summary>
 /// Gerenciamento de avaliacoes de albuns por usuarios.
 /// </summary>
-[Route("api/[controller]")]
 [ApiController]
+[ApiVersionNeutral]
+[Route("api/[controller]")]
 [Produces("application/json")]
 public class AlbumRatingController(
-    IAlbumRatingRepository ratingRepository,
-    IAlbumRepository albumRepository,
-    IUserRepository userRepository) : ControllerBase
+    IAlbumRatingService ratingService,
+    ILogger<AlbumRatingController> logger) : ControllerBase
 {
     /// <summary>
     /// Lista todas as avaliacoes de um album especifico.
@@ -26,11 +29,7 @@ public class AlbumRatingController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public IActionResult GetByAlbum(Guid albumId)
     {
-        if (albumRepository.GetById(albumId) is null)
-            throw new ResourceNotFoundException("Album", albumId);
-
-        var ratings = ratingRepository.GetByAlbum(albumId).Select(AlbumRatingResponse.FromDomain);
-        return Ok(ratings);
+        return Ok(ratingService.GetByAlbum(albumId));
     }
 
     /// <summary>
@@ -43,15 +42,11 @@ public class AlbumRatingController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public IActionResult GetByUser(Guid userId)
     {
-        if (userRepository.GetById(userId) is null)
-            throw new ResourceNotFoundException("Usuario", userId);
-
-        var ratings = ratingRepository.GetByUser(userId).Select(AlbumRatingResponse.FromDomain);
-        return Ok(ratings);
+        return Ok(ratingService.GetByUser(userId));
     }
 
     /// <summary>
-    /// Registra a avaliacao de um usuario sobre um album.
+    /// Registra a avaliacao de um usuario sobre um album. Limite: 10 requisicoes por minuto por IP.
     /// </summary>
     /// <remarks>
     /// Cada usuario pode avaliar um album apenas uma vez. Score deve estar entre 1 e 5.
@@ -68,22 +63,37 @@ public class AlbumRatingController(
     /// <param name="request">Dados da avaliacao.</param>
     /// <returns>Avaliacao criada.</returns>
     [HttpPost]
+    [EnableRateLimiting(RateLimitingExtensions.WritePolicy)]
     [ProducesResponseType(typeof(AlbumRatingResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     public IActionResult Create([FromBody] AlbumRatingRequest request)
     {
-        if (userRepository.GetById(request.UserId) is null)
-            throw new ResourceNotFoundException("Usuario", request.UserId);
+        var traceId = HttpContext.TraceIdentifier;
 
-        if (albumRepository.GetById(request.AlbumId) is null)
-            throw new ResourceNotFoundException("Album", request.AlbumId);
+        logger.LogInformation(
+            "Iniciando avaliacao do album {AlbumId} pelo usuario {UserId} com nota {Score}. TraceId={TraceId}",
+            request.AlbumId, request.UserId, request.Score, traceId);
 
-        if (ratingRepository.Exists(request.UserId, request.AlbumId))
-            throw new ConflictException("Usuario ja avaliou este album.");
+        AlbumRatingResponse rating;
+        try
+        {
+            rating = ratingService.Create(request);
+        }
+        catch (DomainException ex)
+        {
+            logger.LogWarning(
+                "Falha de negocio ao avaliar album {AlbumId} pelo usuario {UserId}: {Reason}. TraceId={TraceId}",
+                request.AlbumId, request.UserId, ex.Message, traceId);
+            throw;
+        }
 
-        var rating = ratingRepository.Create(request.ToDomain());
-        return CreatedAtAction(null, AlbumRatingResponse.FromDomain(rating));
+        logger.LogInformation(
+            "Avaliacao {RatingId} registrada para o album {AlbumId}. TraceId={TraceId}",
+            rating.Id, rating.AlbumId, traceId);
+
+        return StatusCode(StatusCodes.Status201Created, rating);
     }
 }

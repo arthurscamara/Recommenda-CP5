@@ -13,3 +13,7 @@ secrets.json
 
 ## EF migrations backup
 *.bak
+
+## Testes
+TestResults/
+coverage*/

@@ -1,4 +1,5 @@
 using Recommenda.Domain.Common;
+using Recommenda.Domain.Exceptions;
 
 namespace Recommenda.Domain.Entities;
 
@@ -31,7 +32,7 @@ public class Artist : BaseEntity
     public void UpdateName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new Exception("Nome do artista não pode ser vazio.");
+            throw new DomainException("Nome do artista não pode ser vazio.");
         Name = name;
     }
 

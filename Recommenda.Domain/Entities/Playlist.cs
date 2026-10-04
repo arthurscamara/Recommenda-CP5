@@ -1,4 +1,5 @@
 using Recommenda.Domain.Common;
+using Recommenda.Domain.Exceptions;
 
 namespace Recommenda.Domain.Entities;
 
@@ -26,7 +27,7 @@ public class Playlist : BaseEntity
     public Playlist(string name, Guid userId, string description = "", bool isPublic = true)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new Exception("Nome da playlist não pode ser vazio.");
+            throw new DomainException("Nome da playlist não pode ser vazio.");
         Name = name;
         UserId = userId;
         Description = description;
@@ -36,7 +37,7 @@ public class Playlist : BaseEntity
     public void Rename(string newName)
     {
         if (string.IsNullOrWhiteSpace(newName))
-            throw new Exception("Nome da playlist não pode ser vazio.");
+            throw new DomainException("Nome da playlist não pode ser vazio.");
         Name = newName;
     }
 }

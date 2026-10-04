@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Recommenda.Application.Common;
 using Recommenda.Domain.Exceptions;
 
 namespace Recommenda.API.Exceptions;
@@ -18,9 +19,19 @@ public sealed class GlobalExceptionHandler(
         Exception exception,
         CancellationToken cancellationToken)
     {
-        logger.LogError(exception, "Excecao nao tratada: {Message}", exception.Message);
-
+        var traceId = httpContext.TraceIdentifier;
         var (statusCode, title, detail) = MapException(exception, environment);
+
+        // Log estruturado (propriedades nomeadas) com o mesmo traceId devolvido ao cliente.
+        // A stack trace fica no log; a resposta HTTP em Production nao a expoe.
+        logger.LogError(
+            exception,
+            "Excecao tratada pelo GlobalExceptionHandler: {ExceptionType} em {Method} {Path} -> {StatusCode}. TraceId={TraceId}",
+            exception.GetType().Name,
+            httpContext.Request.Method,
+            httpContext.Request.Path.Value,
+            statusCode,
+            traceId);
 
         httpContext.Response.StatusCode  = statusCode;
         httpContext.Response.ContentType = "application/problem+json";
@@ -34,10 +45,9 @@ public sealed class GlobalExceptionHandler(
             Instance = httpContext.Request.Path
         };
 
-        if (environment.IsDevelopment())
-        {
-            problem.Extensions["traceId"] = httpContext.TraceIdentifier;
-        }
+        // traceId em ProblemDetails permite cruzar a resposta com o log do servidor
+        // (ele tambem sai no header X-Trace-Id). Nao e dado sensivel; stack trace nunca vai em Production.
+        problem.Extensions["traceId"] = traceId;
 
         await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
         return true;
@@ -52,6 +62,10 @@ public sealed class GlobalExceptionHandler(
     {
         return exception switch
         {
+            // 400 — paginacao fora da faixa (page >= 1, pageSize 1..100)
+            InvalidPageRequestException e =>
+                (StatusCodes.Status400BadRequest, "Parametros de paginacao invalidos", e.Message),
+
             // 400 — argumentos invalidos
             ArgumentNullException e =>
                 (StatusCodes.Status400BadRequest, "Requisicao invalida", e.Message),

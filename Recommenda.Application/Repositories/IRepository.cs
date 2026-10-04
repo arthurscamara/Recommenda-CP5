@@ -1,3 +1,4 @@
+using Recommenda.Application.Common;
 using Recommenda.Domain.Common;
 
 namespace Recommenda.Application.Repositories;
@@ -11,6 +12,14 @@ public interface IRepository<T> where T : BaseEntity
 {
     /// <summary>Retorna todas as entidades ativas.</summary>
     IReadOnlyList<T> GetAll();
+
+    /// <summary>
+    /// Retorna uma pagina de entidades. O corte (Count + OrderBy + Skip + Take)
+    /// e feito no banco, nunca em memoria.
+    /// </summary>
+    /// <param name="page">Pagina (base 1), ja validada.</param>
+    /// <param name="pageSize">Tamanho da pagina, ja validado.</param>
+    PagedResult<T> GetPaged(int page, int pageSize);
 
     /// <summary>Busca uma entidade pelo identificador unico.</summary>
     /// <param name="id">Identificador da entidade.</param>

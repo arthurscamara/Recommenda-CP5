@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Recommenda.Application.DTOs;
 using Recommenda.Application.Services;
@@ -10,6 +11,7 @@ namespace Recommenda.API.Controllers;
 /// </summary>
 [Route("api/[controller]")]
 [ApiController]
+[ApiVersionNeutral]
 [Produces("application/json")]
 public class ArtistController(IArtistRepository artistRepository) : ControllerBase
 {

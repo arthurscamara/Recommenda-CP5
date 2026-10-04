@@ -1,4 +1,5 @@
 using Recommenda.Domain.Common;
+using Recommenda.Domain.Exceptions;
 
 namespace Recommenda.Domain.Entities;
 
@@ -28,7 +29,7 @@ public class TrackRating : BaseEntity
     public void UpdateScore(int score)
     {
         if (score is < 1 or > 5)
-            throw new Exception("Nota deve estar entre 1 e 5.");
+            throw new DomainException("Nota deve estar entre 1 e 5.");
         Score = score;
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Recommenda.Application.Common;
 using Recommenda.Application.Repositories;
 using Recommenda.Domain.Common;
 using Recommenda.Infrastructure.Persistence;
@@ -22,6 +23,27 @@ public class Repository<T>(RecommendaContext context) : IRepository<T> where T :
             .AsNoTracking()
             .OrderBy(e => e.CreatedAt)
             .ToList();
+    }
+
+    /// <inheritdoc/>
+    public PagedResult<T> GetPaged(int page, int pageSize)
+    {
+        var query = _set.AsNoTracking();
+
+        var totalItems = query.Count();
+
+        var offset = (long)(page - 1) * pageSize;
+        if (offset >= totalItems)
+            return new PagedResult<T>([], totalItems);
+
+        var items = query
+            .OrderBy(e => e.CreatedAt)
+            .ThenBy(e => e.Id)
+            .Skip((int)offset)
+            .Take(pageSize)
+            .ToList();
+
+        return new PagedResult<T>(items, totalItems);
     }
 
     /// <inheritdoc/>

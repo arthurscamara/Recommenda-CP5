@@ -1,4 +1,8 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Recommenda.API.Extensions;
+using Recommenda.Application.Common;
 using Recommenda.Application.DTOs;
 using Recommenda.Application.Services;
 using Recommenda.Domain.Exceptions;
@@ -7,24 +11,47 @@ namespace Recommenda.API.Controllers;
 
 /// <summary>
 /// Gerenciamento de albuns de estudio, EPs e coletaneas.
+/// Recurso versionado: 1.0 (deprecada, lista completa) e 2.0 (atual, lista paginada).
+/// As duas versoes usam o mesmo <see cref="IAlbumService"/>.
 /// </summary>
-[Route("api/[controller]")]
 [ApiController]
+[ApiVersion("1.0", Deprecated = true)]
+[ApiVersion("2.0")]
+[Route("api/[controller]")]
 [Produces("application/json")]
 public class AlbumController(
-    IAlbumRepository albumRepository,
-    IArtistRepository artistRepository) : ControllerBase
+    IAlbumService albumService,
+    ILogger<AlbumController> logger) : ControllerBase
 {
     /// <summary>
-    /// Lista todos os albuns cadastrados.
+    /// [v1 — DEPRECADA] Lista todos os albuns cadastrados (array completo, contrato do CP3).
     /// </summary>
     /// <returns>Lista de albuns.</returns>
     [HttpGet]
+    [MapToApiVersion("1.0")]
     [ProducesResponseType(typeof(IEnumerable<AlbumResponse>), StatusCodes.Status200OK)]
-    public IActionResult GetAll()
+    public IActionResult GetAllV1()
     {
-        var albums = albumRepository.GetAll().Select(AlbumResponse.FromDomain);
-        return Ok(albums);
+        return Ok(albumService.GetAll());
+    }
+
+    /// <summary>
+    /// [v2] Lista albuns paginados, ordenados por titulo.
+    /// </summary>
+    /// <param name="page">Pagina (base 1). Padrao 1.</param>
+    /// <param name="pageSize">Itens por pagina, de 1 a 100. Padrao 20.</param>
+    /// <returns>Envelope com page, pageSize, totalItems, totalPages e items.</returns>
+    [HttpGet]
+    [MapToApiVersion("2.0")]
+    [EnableRateLimiting(RateLimitingExtensions.ReadPolicy)]
+    [ProducesResponseType(typeof(PagedResponse<AlbumResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
+    public IActionResult GetAllV2(
+        [FromQuery] int page = PageRequest.DefaultPage,
+        [FromQuery] int pageSize = PageRequest.DefaultPageSize)
+    {
+        return Ok(albumService.GetPaged(page, pageSize));
     }
 
     /// <summary>
@@ -37,11 +64,7 @@ public class AlbumController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public IActionResult GetById(Guid id)
     {
-        var album = albumRepository.GetById(id);
-        if (album is null)
-            throw new ResourceNotFoundException("Album", id);
-
-        return Ok(AlbumResponse.FromDomain(album));
+        return Ok(albumService.GetById(id));
     }
 
     /// <summary>
@@ -54,15 +77,11 @@ public class AlbumController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public IActionResult GetByArtist(Guid artistId)
     {
-        if (artistRepository.GetById(artistId) is null)
-            throw new ResourceNotFoundException("Artista", artistId);
-
-        var albums = albumRepository.GetByArtist(artistId).Select(AlbumResponse.FromDomain);
-        return Ok(albums);
+        return Ok(albumService.GetByArtist(artistId));
     }
 
     /// <summary>
-    /// Cria um novo album para um artista existente.
+    /// Cria um novo album para um artista existente. Limite: 10 requisicoes por minuto por IP.
     /// </summary>
     /// <remarks>
     /// Exemplo de corpo:
@@ -79,16 +98,37 @@ public class AlbumController(
     /// <param name="request">Dados do album a ser criado.</param>
     /// <returns>Album criado com seu identificador gerado.</returns>
     [HttpPost]
+    [EnableRateLimiting(RateLimitingExtensions.WritePolicy)]
     [ProducesResponseType(typeof(AlbumResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     public IActionResult Create([FromBody] AlbumRequest request)
     {
-        if (artistRepository.GetById(request.ArtistId) is null)
-            throw new ResourceNotFoundException("Artista", request.ArtistId);
+        var traceId = HttpContext.TraceIdentifier;
 
-        var album = albumRepository.Create(request.ToDomain());
-        return CreatedAtAction(nameof(GetById), new { id = album.Id }, AlbumResponse.FromDomain(album));
+        logger.LogInformation(
+            "Iniciando criacao de album {AlbumTitle} para o artista {ArtistId}. TraceId={TraceId}",
+            request.Title, request.ArtistId, traceId);
+
+        AlbumResponse album;
+        try
+        {
+            album = albumService.Create(request);
+        }
+        catch (DomainException ex)
+        {
+            logger.LogWarning(
+                "Falha de negocio ao criar album {AlbumTitle} para o artista {ArtistId}: {Reason}. TraceId={TraceId}",
+                request.Title, request.ArtistId, ex.Message, traceId);
+            throw;
+        }
+
+        logger.LogInformation(
+            "Album {AlbumId} criado com sucesso para o artista {ArtistId}. TraceId={TraceId}",
+            album.Id, album.ArtistId, traceId);
+
+        return CreatedAtAction(nameof(GetById), new { id = album.Id }, album);
     }
 
     /// <summary>
@@ -100,9 +140,7 @@ public class AlbumController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public IActionResult Delete(Guid id)
     {
-        if (!albumRepository.Delete(id))
-            throw new ResourceNotFoundException("Album", id);
-
+        albumService.Delete(id);
         return NoContent();
     }
 }
