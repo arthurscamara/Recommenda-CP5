@@ -1,0 +1,49 @@
+﻿HTTP/1.1 503 Service Unavailable
+Content-Type: application/json; charset=utf-8
+Date: Sun, 04 Oct 2026 22:35:18 GMT
+Server: Kestrel
+Cache-Control: no-store, no-cache
+Expires: Thu, 01 Jan 1970 00:00:00 GMT
+Pragma: no-cache
+Transfer-Encoding: chunked
+X-Trace-Id: 0HNP2CUM87IQO:00000001
+
+{
+  "status": "Unhealthy",
+  "totalDurationMs": 135.57,
+  "timestamp": "2026-10-04T22:35:19.065734+00:00",
+  "traceId": "0HNP2CUM87IQO:00000001",
+  "checks": [
+    {
+      "name": "self",
+      "status": "Healthy",
+      "durationMs": 0.05,
+      "description": "API em execucao.",
+      "tags": [
+        "live"
+      ],
+      "error": null
+    },
+    {
+      "name": "mysql",
+      "status": "Unhealthy",
+      "durationMs": 79.87,
+      "description": null,
+      "tags": [
+        "db",
+        "ready"
+      ],
+      "error": null
+    },
+    {
+      "name": "fiap-site",
+      "status": "Healthy",
+      "durationMs": 135.16,
+      "description": "https://www.fiap.com.br respondeu 200.",
+      "tags": [
+        "external"
+      ],
+      "error": null
+    }
+  ]
+}

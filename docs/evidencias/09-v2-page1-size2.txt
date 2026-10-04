@@ -1,0 +1,10 @@
+﻿HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Sun, 04 Oct 2026 22:45:14 GMT
+Server: Kestrel
+Transfer-Encoding: chunked
+X-Trace-Id: 0HNP2D4JEAU8R:00000001
+api-supported-versions: 2.0
+api-deprecated-versions: 1.0
+
+{"page":1,"pageSize":2,"totalItems":11,"totalPages":6,"hasPrevious":false,"hasNext":true,"items":[{"id":"ed3efabd-f95a-45a8-aff2-164ccb292396","title":"Album 27828-1","releaseDate":"2001-01-01T00:00:00","artistId":"2114fec8-6858-41f7-acc3-ad8d66927abb","coverUrl":""},{"id":"e2e7fc04-df42-40bb-a252-b284c8b3755b","title":"Album 27828-10","releaseDate":"2010-01-01T00:00:00","artistId":"2114fec8-6858-41f7-acc3-ad8d66927abb","coverUrl":""}]}

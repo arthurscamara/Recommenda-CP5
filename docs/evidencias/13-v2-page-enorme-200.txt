@@ -1,0 +1,10 @@
+﻿HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Sun, 04 Oct 2026 22:45:15 GMT
+Server: Kestrel
+Transfer-Encoding: chunked
+X-Trace-Id: 0HNP2D4JEAU8V:00000001
+api-supported-versions: 2.0
+api-deprecated-versions: 1.0
+
+{"page":99999,"pageSize":2,"totalItems":11,"totalPages":6,"hasPrevious":true,"hasNext":false,"items":[]}

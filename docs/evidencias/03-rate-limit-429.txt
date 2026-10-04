@@ -1,0 +1,9 @@
+﻿HTTP/1.1 429 Too Many Requests
+Content-Type: application/problem+json
+Date: Sun, 04 Oct 2026 22:45:14 GMT
+Server: Kestrel
+Retry-After: 60
+Transfer-Encoding: chunked
+X-Trace-Id: 0HNP2D4JEAU8L:00000001
+
+{"type":"https://datatracker.ietf.org/doc/html/rfc6585#section-4","title":"Limite de requisicoes excedido","status":429,"detail":"Limite de requisicoes atingido para este endpoint. Tente novamente em 60 segundos.","instance":"/api/album","retryAfterSeconds":60,"traceId":"0HNP2D4JEAU8L:00000001"}

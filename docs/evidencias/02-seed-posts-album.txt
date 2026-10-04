@@ -1,0 +1,10 @@
+﻿POST /api/album #1 -> 201
+POST /api/album #2 -> 201
+POST /api/album #3 -> 201
+POST /api/album #4 -> 201
+POST /api/album #5 -> 201
+POST /api/album #6 -> 201
+POST /api/album #7 -> 201
+POST /api/album #8 -> 201
+POST /api/album #9 -> 201
+POST /api/album #10 -> 201

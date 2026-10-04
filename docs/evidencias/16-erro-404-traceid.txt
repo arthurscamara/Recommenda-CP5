@@ -1,0 +1,12 @@
+﻿HTTP/1.1 404 Not Found
+Content-Type: application/json; charset=utf-8
+Date: Sun, 04 Oct 2026 22:45:15 GMT
+Server: Kestrel
+Cache-Control: no-cache,no-store
+Expires: -1
+Pragma: no-cache
+Transfer-Encoding: chunked
+api-supported-versions: 2.0
+api-deprecated-versions: 1.0
+
+{"type":"about:blank","title":"Recurso nao encontrado","status":404,"detail":"Album com id '00000000-0000-0000-0000-000000000000' nao foi encontrado.","instance":"/api/album/00000000-0000-0000-0000-000000000000","traceId":"0HNP2D4JEAU92:00000001"}
